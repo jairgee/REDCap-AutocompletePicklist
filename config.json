@@ -21,7 +21,7 @@
             "description": "Presents a single-value autocomplete picklist."
         },
         {
-            "tag": "@AUTOCOMPLETE_PICKLIST_MULTIPLE",
+            "tag": "@AUTOCOMPLETE_PICKLIST_MULTI",
             "description": "Presents a multiple-value autocomplete picklist. Selected values are saved as a pipe-delimited string, matching REDCap’s usual multiple-value format."
         }
     ]

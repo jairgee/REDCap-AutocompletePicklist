@@ -126,7 +126,15 @@ class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
 ?>
         <script>
             window.AutocompletePicklistData =
-                <?= json_encode($fields, JSON_UNESCAPED_UNICODE) ?>;
+                <?= json_encode(
+                    $fields,
+                    JSON_UNESCAPED_UNICODE
+                        | JSON_HEX_TAG
+                        | JSON_HEX_AMP
+                        | JSON_HEX_APOS
+                        | JSON_HEX_QUOT
+                        | JSON_THROW_ON_ERROR
+                ) ?>;
         </script>
     <?php
     }
