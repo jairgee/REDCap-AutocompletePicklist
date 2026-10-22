@@ -280,13 +280,11 @@ class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
                     const hidden = $('<input>')
                         .attr('type', 'hidden')
                         .attr('name', fieldName)
-                        .attr('id', input.attr('id'))
                         .val(currentValue);
 
                     // Visible select2 control
                     const select = $('<select></select>')
                         .attr('name', fieldName)
-                        .attr('id', input.attr('id') + '_select2')
                         .css('width', '100%');
 
                     if (multiple) {
