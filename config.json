@@ -1,0 +1,13 @@
+{
+    "name": "Autocomplete Picklist",
+    "namespace": "Jairgee\\AutocompletePicklist",
+    "description": "Provides @AUTOCOMPLETE_PICKLIST action tag.",
+    "authors": [
+        {
+            "name": "Jonathan Gardner",
+            "email": "jgardner@mountainpacific.org",
+            "institution": "Mountain Pacific"
+        }
+    ],
+    "framework-version": 17
+}
