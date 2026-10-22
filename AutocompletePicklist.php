@@ -199,10 +199,6 @@ class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
 
                 $normalized = $this->normalize($value);
 
-                /*                if ($normalized !== '') {
-                    $values[] = $normalized;
-                }
-                    */
                 if ($normalized !== '') {
 
                     foreach (explode('|', $normalized) as $tag) {
@@ -289,6 +285,7 @@ class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
 
                     // Visible select2 control
                     const select = $('<select></select>')
+                        .attr('name', fieldName)
                         .attr('id', input.attr('id') + '_select2')
                         .css('width', '100%');
 
@@ -354,8 +351,8 @@ class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
                         }
                     });
 
-                    input.after(hidden);
-                    hidden.after(select);
+                    input.after(select);
+                    select.after(hidden);
 
                     input.remove();
 
