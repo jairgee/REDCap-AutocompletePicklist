@@ -3,36 +3,78 @@
 namespace Jairgee\AutocompletePicklist;
 
 use Form;
-use REDCap;
 
+/**
+ * Converts annotated text fields into autocomplete-style picklists.
+ *
+ * Suggestions are collected from existing project data, and users may enter
+ * values that are not already in the suggestion list.
+ */
 class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
 {
+    /**
+     * Action tag for a single-value autocomplete picklist.
+     */
     const ACTION_TAG = '@AUTOCOMPLETE_PICKLIST';
+
+    /**
+     * Action tag for a multiple-value autocomplete picklist.
+     */
     const ACTION_TAG_MULTI = '@AUTOCOMPLETE_PICKLIST_MULTI';
 
+    /**
+     * Injects the autocomplete control into a data-entry form.
+     *
+     * @param int         $project_id     ID of the REDCap project.
+     * @param string|null $record         Record currently being displayed, if any.
+     * @param string      $instrument     Name of the instrument being displayed.
+     * @param int         $event_id        ID of the event being displayed.
+     * @param int|null    $group_id        ID of the DAG, if applicable.
+     * @param int|null    $repeat_instance Repeating instance being displayed, if applicable.
+     *
+     * @return void
+     */
     public function redcap_data_entry_form(
-        $project_id,
-        $record,
-        $instrument,
-        $event_id,
-        $group_id,
-        $repeat_instance
+        int $project_id,
+        ?string $record,
+        string $instrument,
+        int $event_id,
+        ?int $group_id,
+        ?int $repeat_instance
     ) {
         \REDCap::logEvent('AutocompletePicklist', "Hook fired for instrument $instrument");
         $this->injectAutocomplete($project_id, $instrument);
     }
 
+    /**
+     * Injects the autocomplete control at the top of a survey page.
+     *
+     * @param int         $project_id ID of the REDCap project.
+     * @param string|null $record     Record currently being displayed, if any.
+     * @param string      $instrument Name of the instrument being displayed.
+     * @param int         $event_id   ID of the event being displayed.
+     *
+     * @return void
+     */
     public function redcap_survey_page_top(
-        $project_id,
-        $record,
-        $instrument,
-        $event_id
+        int $project_id,
+        ?string $record,
+        string $instrument,
+        int $event_id
     ) {
         \REDCap::logEvent('AutocompletePicklist', "Hook fired for instrument $instrument");
         $this->injectAutocomplete($project_id, $instrument);
     }
 
-    protected function injectAutocomplete($projectId, $instrument)
+    /**
+     * Finds tagged text fields on an instrument and emits their picklist data.
+     *
+     * @param int    $projectId ID of the REDCap project.
+     * @param string $instrument Name of the instrument being displayed.
+     *
+     * @return void
+     */
+    protected function injectAutocomplete(int $projectId, string $instrument)
     {
         global $Proj;
 
@@ -52,17 +94,6 @@ class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
 
             $annotation = $meta['misc'];
 
-            /*            if (
-                $annotation &&
-                stripos($annotation, self::ACTION_TAG) !== false
-            ) {
-
-                $fields[$fieldName] = $this->getPicklistValues(
-                    $projectId,
-                    $fieldName
-                );
-            }
-*/
             if (!$annotation) {
                 continue;
             }
@@ -100,7 +131,15 @@ class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
     <?php
     }
 
-    protected function getPicklistValues($projectId, $fieldName)
+    /**
+     * Retrieves and sorts distinct suggestions for a field from project data.
+     *
+     * @param int    $projectId ID of the REDCap project.
+     * @param string $fieldName Name of the field whose values will be collected.
+     *
+     * @return string[] Distinct field values, sorted without regard to case.
+     */
+    protected function getPicklistValues(int $projectId, string $fieldName)
     {
         $data = \REDCap::getData([
             'project_id' => $projectId,
@@ -126,10 +165,21 @@ class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
         return array_values($values);
     }
 
+    /**
+     * Recursively finds values for a target field and appends their suggestions.
+     *
+     * Values are normalized and split on the pipe delimiter before being added.
+     *
+     * @param array    $node       Data node to inspect.
+     * @param string   $targetField Field name whose values should be collected.
+     * @param string[] $values     Suggestions collected so far, passed by reference.
+     *
+     * @return void
+     */
     protected function extractValues(
-        $node,
-        $targetField,
-        &$values
+        array $node,
+        string $targetField,
+        array &$values
     ) {
         if (!is_array($node)) {
             return;
@@ -168,7 +218,14 @@ class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
         }
     }
 
-    protected function normalize($value)
+    /**
+     * Removes markup and normalizes whitespace in a field value.
+     *
+     * @param string $value Value to normalize.
+     *
+     * @return string Normalized value.
+     */
+    protected function normalize(string $value)
     {
         $value = strip_tags($value);
         $value = trim($value);
@@ -177,105 +234,27 @@ class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
         return $value;
     }
 
+    /**
+     * Emits the JavaScript that initializes autocomplete picklist controls.
+     *
+     * @return void
+     */
     protected function includeJs()
     {
     ?>
         <script>
-            /*
+            /**
+             * Initializes Select2 controls for fields configured by the module.
+             * The PHP hook provides each field's suggestions and multiplicity
+             * through window.AutocompletePicklistData.
+             */
             $(function() {
 
                 if (typeof window.AutocompletePicklistData === "undefined") {
                     return;
                 }
 
-                Object.keys(window.AutocompletePicklistData).forEach(function(fieldName) {
-
-                    const values = window.AutocompletePicklistData[fieldName];
-
-                    const input = $('input[name="' + fieldName + '"]');
-
-                    if (input.length === 0) {
-                        return;
-                    }
-
-                    const currentValue = input.val() || '';
-
-                    const select = $('<select></select>')
-                        .attr('name', fieldName)
-                        .attr('id', input.attr('id'))
-                        .attr('data-field-name', fieldName)
-                        .css('width', '100%');
-
-                    // Blank option required for placeholder support
-                    select.append(
-                        $('<option></option>')
-                        .val('')
-                        .text('')
-                    );
-
-                    values.forEach(function(v) {
-
-                        select.append(
-                            $('<option></option>')
-                            .val(v)
-                            .text(v)
-                        );
-                    });
-
-                    // Existing value not yet in the list
-                    if (currentValue && !values.includes(currentValue)) {
-
-                        select.append(
-                            $('<option></option>')
-                            .val(currentValue)
-                            .text(currentValue)
-                        );
-                    }
-
-                    // Replace textbox
-                    input.after(select);
-                    input.remove();
-
-                    // Set current value or blank
-                    select.val(currentValue);
-
-                    // Initialize Select2
-                    select.select2({
-                        tags: true,
-                        width: '100%',
-                        placeholder: 'Select or enter a value',
-                        allowClear: true,
-                        createTag: function(params) {
-
-                            let term = $.trim(params.term);
-
-                            if (term === '') {
-                                return null;
-                            }
-
-                            return {
-                                id: term,
-                                text: term,
-                                newTag: true
-                            };
-                        }
-                    });
-
-
-                    // Trigger REDCap change events
-                    select.on('change', function() {
-                        $(this).trigger('blur');
-                    });
-                });
-            });
-*/
-
-            $(function() {
-
-                if (typeof window.AutocompletePicklistData === "undefined") {
-                    return;
-                }
-
+                /** @param {string} fieldName Name of the REDCap field to convert. */
                 Object.keys(window.AutocompletePicklistData).forEach(function(fieldName) {
 
                     const config =
@@ -336,14 +315,11 @@ class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
                     if (multiple) {
 
                         selectedValues = currentValue ?
-                            currentValue.split('|') :
-                            [];
+                            currentValue.split('|') : [];
 
                     } else {
 
-                        selectedValues = currentValue ?
-                            [currentValue] :
-                            [];
+                        selectedValues = currentValue ? [currentValue] : [];
                     }
 
                     selectedValues.forEach(function(v) {
@@ -379,9 +355,14 @@ class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
                         tags: true,
                         width: '100%',
                         placeholder: multiple ?
-                            'Select or enter values' :
-                            'Select or enter a value',
+                            'Select or enter values' : 'Select or enter a value',
                         allowClear: !multiple,
+                        /**
+                         * Creates a Select2 tag for a value not in the suggestions.
+                         *
+                         * @param {{term: string}} params Search term entered by the user.
+                         * @returns {{id: string, text: string, newTag: boolean}|null}
+                         */
                         createTag: function(params) {
 
                             let term = $.trim(params.term);
@@ -411,6 +392,14 @@ class AutocompletePicklist extends \ExternalModules\AbstractExternalModule
                             .trigger('change');
                     }
 
+                    /**
+                     * Copies the current selection into REDCap's submitted field.
+                     *
+                     * Multiple selections are serialized with REDCap's pipe delimiter;
+                     * change and blur events notify REDCap that the value was updated.
+                     *
+                     * @returns {void}
+                     */
                     function syncHiddenField() {
 
                         let value;
