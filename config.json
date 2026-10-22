@@ -1,7 +1,7 @@
 {
     "name": "Autocomplete Picklist",
     "namespace": "Jairgee\\AutocompletePicklist",
-    "description": "Provides @AUTOCOMPLETE_PICKLIST action tag.",
+    "description": "Provides @AUTOCOMPLETE_PICKLIST action tag. <a href=\"https://github.com/jairgee/REDCap-AutocompletePicklist/blob/main/README.md\" target=\"_blank\"><u>View documentation on GitHub</u></a>",
     "authors": [
         {
             "name": "Jonathan Gardner",
@@ -9,5 +9,20 @@
             "institution": "Mountain Pacific"
         }
     ],
-    "framework-version": 17
+    "compatibility": {
+        "redcap-version-min": "17.0.0",
+        "php-version-min": "8.0.0",
+        "php-version-max": "8.99.99"
+    },
+    "framework-version": 17,
+    "action-tags": [
+        {
+            "tag": "@AUTOCOMPLETE_PICKLIST",
+            "description": "Presents a single-value autocomplete picklist."
+        },
+        {
+            "tag": "@AUTOCOMPLETE_PICKLIST_MULTIPLE",
+            "description": "Presents a multiple-value autocomplete picklist. Selected values are saved as a pipe-delimited string, matching REDCap’s usual multiple-value format."
+        }
+    ]
 }
